@@ -1,58 +1,42 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef } from 'react';
 import styles from './FileTable.module.css';
-import {
-  formatPathAndDeviceInfo,
-  getPathsForAllAvailableFiles,
-  isFileAvailable,
-} from './helpers';
+import useFileSelection from './useFileSelection'; // Import the custom hook
+import { formatPathAndDeviceInfo, isFileAvailable } from './helpers';
 
 const FileTable = ({ files }) => {
-  const [pathsOfSelectedFiles, setPathsOfSelectedFiles] = useState([]);
-  const [allAvailableFilesSelected, setAllAvailableFilesSelected] =
-    useState(false);
-
   const selectAllCheckboxRef = useRef(null);
 
-  const availableFilesCount = useMemo(
-    () => files.filter((file) => isFileAvailable(file.status)).length,
-    [files]
-  );
-
-  const filesByPaths = useMemo(
-    () => new Map(files.map((file) => [file.path, file])),
-    [files]
-  );
+  const {
+    pathsOfSelectedFiles,
+    availableFilesCount,
+    toggleFileSelection,
+    selectAllAvailableFiles,
+    deselectAllFiles,
+  } = useFileSelection(files);
 
   useEffect(() => {
     if (pathsOfSelectedFiles.length === availableFilesCount) {
-      setAllAvailableFilesSelected(true);
+      selectAllCheckboxRef.current.checked = true;
       selectAllCheckboxRef.current.indeterminate = false;
     } else if (pathsOfSelectedFiles.length > 0) {
-      setAllAvailableFilesSelected(false);
+      selectAllCheckboxRef.current.checked = false;
       selectAllCheckboxRef.current.indeterminate = true;
     } else {
-      setAllAvailableFilesSelected(false);
+      selectAllCheckboxRef.current.checked = false;
       selectAllCheckboxRef.current.indeterminate = false;
     }
   }, [availableFilesCount, pathsOfSelectedFiles]);
 
   const handleSelectAll = () => {
-    if (allAvailableFilesSelected) {
-      setPathsOfSelectedFiles([]);
+    if (pathsOfSelectedFiles.length === availableFilesCount) {
+      deselectAllFiles();
     } else {
-      setPathsOfSelectedFiles(getPathsForAllAvailableFiles(files));
+      selectAllAvailableFiles();
     }
   };
 
-  const handleCheckboxChange = (path) => {
-    setPathsOfSelectedFiles((prevSelected) =>
-      prevSelected.includes(path)
-        ? prevSelected.filter((currentPath) => currentPath !== path)
-        : [...prevSelected, path]
-    );
-  };
-
   const handleDownload = () => {
+    const filesByPaths = new Map(files.map((file) => [file.path, file]));
     const selectedFilePaths = pathsOfSelectedFiles.map((currentPath) =>
       formatPathAndDeviceInfo(filesByPaths, currentPath)
     );
@@ -81,9 +65,8 @@ const FileTable = ({ files }) => {
               <input
                 type="checkbox"
                 ref={selectAllCheckboxRef}
-                checked={allAvailableFilesSelected}
-                title="select all"
                 onChange={handleSelectAll}
+                aria-label="select all available files"
               />
             </th>
             <th>Name</th>
@@ -102,9 +85,9 @@ const FileTable = ({ files }) => {
                   <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={() => handleCheckboxChange(file.path)}
+                    onChange={() => toggleFileSelection(file.path)}
                     disabled={isDisabled}
-                    title={`select-${file.name}`}
+                    aria-label={`select the file ${file.name}`}
                   />
                 </td>
                 <td>{file.name}</td>

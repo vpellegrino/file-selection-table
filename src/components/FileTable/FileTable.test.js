@@ -53,7 +53,7 @@ describe('<FileTable />', () => {
 
     // Only 2 checkboxes should be checked, corresponding to available files
     const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select-/i,
+      name: /select the file/i,
     });
     expect(availableCheckboxes.filter((cb) => cb.checked).length).toBe(2);
   });
@@ -62,7 +62,7 @@ describe('<FileTable />', () => {
     render(<FileTable files={mockFiles} />);
 
     const nonAvailableCheckboxes = screen
-      .getAllByRole('checkbox', { name: /select-/i })
+      .getAllByRole('checkbox', { name: /select the file/i })
       .filter((checkbox) => checkbox.disabled);
 
     // Ensure that 3 non-available files have disabled checkboxes
@@ -78,7 +78,7 @@ describe('<FileTable />', () => {
 
     // Select one available file manually
     const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select-/i,
+      name: /select the file/i,
     });
     fireEvent.click(availableCheckboxes[0]); // Select first available file
 
@@ -93,7 +93,7 @@ describe('<FileTable />', () => {
       name: /select all/i,
     });
     const availableCheckboxes = screen
-      .getAllByRole('checkbox', { name: /select-/i })
+      .getAllByRole('checkbox', { name: /select the file/i })
       .filter((checkbox) => !checkbox.disabled);
 
     // Select all available files manually
@@ -125,7 +125,7 @@ describe('<FileTable />', () => {
     render(<FileTable files={mockFiles} />);
 
     const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select-/i,
+      name: /select the file/i,
     });
 
     // Select an available file
@@ -141,7 +141,9 @@ describe('<FileTable />', () => {
     render(<FileTable files={mockFiles} />);
 
     // Select the available files
-    const checkboxes = screen.getAllByRole('checkbox', { name: /select-/i });
+    const checkboxes = screen.getAllByRole('checkbox', {
+      name: /select the file/i,
+    });
     fireEvent.click(checkboxes[0]); // netsh.exe
     fireEvent.click(checkboxes[1]); // uxtheme.dll
 
@@ -157,7 +159,7 @@ describe('<FileTable />', () => {
     render(<FileTable files={mockFiles} />);
 
     const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select-/i,
+      name: /select the file/i,
     });
 
     // Initially should display "None Selected"
@@ -179,7 +181,7 @@ describe('<FileTable />', () => {
 
     // Get all available checkboxes (the ones that are not disabled)
     const availableCheckboxes = screen
-      .getAllByRole('checkbox', { name: /select-/i })
+      .getAllByRole('checkbox', { name: /select the file/i })
       .filter((checkbox) => !checkbox.disabled);
 
     // Manually select all available checkboxes
@@ -198,7 +200,7 @@ describe('<FileTable />', () => {
       name: /select all/i,
     });
     const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select-/i,
+      name: /select the file/i,
     });
 
     // Select all available checkboxes
