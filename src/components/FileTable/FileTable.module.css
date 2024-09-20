@@ -34,7 +34,8 @@ button {
   cursor: pointer;
 }
 
-input[type=checkbox]:disabled, button:disabled {
+input[type='checkbox']:disabled,
+button:disabled {
   cursor: not-allowed;
   background-color: #ccc;
 }
