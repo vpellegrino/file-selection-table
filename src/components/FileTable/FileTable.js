@@ -44,7 +44,7 @@ const FileTable = () => {
 
   useEffect(() => {
     const availableFilesCount = files.filter((file) =>
-      isFileAvailable(file?.status)
+      isFileAvailable(file.status)
     ).length;
 
     if (pathsOfSelectedFiles.length === availableFilesCount) {
@@ -140,7 +140,7 @@ const FileTable = () => {
                   checked={pathsOfSelectedFiles.includes(file.path)}
                   title={`select-${file.name}`}
                   onChange={() => handleCheckboxChange(file.path)}
-                  disabled={file.status !== 'available'}
+                  disabled={!isFileAvailable(file.status)}
                 />
               </td>
               <td>{file.name}</td>
