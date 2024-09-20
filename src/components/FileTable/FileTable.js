@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './FileTable.module.css';
 import {
   formatPathAndDeviceInfo,
@@ -13,11 +13,17 @@ const FileTable = ({ files }) => {
 
   const selectAllCheckboxRef = useRef(null);
 
-  useEffect(() => {
-    const availableFilesCount = files.filter((file) =>
-      isFileAvailable(file.status)
-    ).length;
+  const availableFilesCount = useMemo(
+    () => files.filter((file) => isFileAvailable(file.status)).length,
+    [files]
+  );
 
+  const filesByPaths = useMemo(
+    () => new Map(files.map((file) => [file.path, file])),
+    [files]
+  );
+
+  useEffect(() => {
     if (pathsOfSelectedFiles.length === availableFilesCount) {
       setAllAvailableFilesSelected(true);
       selectAllCheckboxRef.current.indeterminate = false;
@@ -28,7 +34,7 @@ const FileTable = ({ files }) => {
       setAllAvailableFilesSelected(false);
       selectAllCheckboxRef.current.indeterminate = false;
     }
-  }, [files, pathsOfSelectedFiles]);
+  }, [availableFilesCount, pathsOfSelectedFiles]);
 
   const handleSelectAll = () => {
     if (allAvailableFilesSelected) {
@@ -39,18 +45,14 @@ const FileTable = ({ files }) => {
   };
 
   const handleCheckboxChange = (path) => {
-    if (pathsOfSelectedFiles.includes(path)) {
-      setPathsOfSelectedFiles(
-        pathsOfSelectedFiles.filter((currentPath) => currentPath !== path)
-      );
-    } else {
-      setPathsOfSelectedFiles([...pathsOfSelectedFiles, path]);
-    }
+    setPathsOfSelectedFiles((prevSelected) =>
+      prevSelected.includes(path)
+        ? prevSelected.filter((currentPath) => currentPath !== path)
+        : [...prevSelected, path]
+    );
   };
 
   const handleDownload = () => {
-    const filesByPaths = new Map(files.map((file) => [file.path, file]));
-
     const selectedFilePaths = pathsOfSelectedFiles.map((currentPath) =>
       formatPathAndDeviceInfo(filesByPaths, currentPath)
     );
@@ -90,27 +92,27 @@ const FileTable = ({ files }) => {
           </tr>
         </thead>
         <tbody>
-          {files.map((file) => (
-            <tr
-              key={`${file.path}`}
-              className={
-                pathsOfSelectedFiles.includes(file.path) ? styles.selected : ''
-              }
-            >
-              <td>
-                <input
-                  type="checkbox"
-                  checked={pathsOfSelectedFiles.includes(file.path)}
-                  title={`select-${file.name}`}
-                  onChange={() => handleCheckboxChange(file.path)}
-                  disabled={!isFileAvailable(file.status)}
-                />
-              </td>
-              <td>{file.name}</td>
-              <td>{file.device}</td>
-              <td>{file.path}</td>
-            </tr>
-          ))}
+          {files.map((file) => {
+            const isSelected = pathsOfSelectedFiles.includes(file.path);
+            const isDisabled = !isFileAvailable(file.status);
+
+            return (
+              <tr key={file.path} className={isSelected ? styles.selected : ''}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => handleCheckboxChange(file.path)}
+                    disabled={isDisabled}
+                    title={`select-${file.name}`}
+                  />
+                </td>
+                <td>{file.name}</td>
+                <td>{file.device}</td>
+                <td>{file.path}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
