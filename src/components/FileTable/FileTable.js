@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './FileTable.module.css';
+import { isFileAvailable } from './helper';
 
 const files = [
   {
@@ -35,54 +36,61 @@ const files = [
 ];
 
 const FileTable = () => {
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [selectAll, setSelectAll] = useState(false);
+  const [pathsOfSelectedFiles, setPathsOfSelectedFiles] = useState([]);
+  const [allAvailableFilesSelected, setAllAvailableFilesSelected] =
+    useState(false);
 
   const selectAllCheckboxRef = useRef(null);
 
   useEffect(() => {
-    const availableFilesCount = files.filter(
-      (file) => file.status === 'available'
+    const availableFilesCount = files.filter((file) =>
+      isFileAvailable(file?.status)
     ).length;
 
-    if (selectedFiles.length === availableFilesCount) {
-      setSelectAll(true);
+    if (pathsOfSelectedFiles.length === availableFilesCount) {
+      setAllAvailableFilesSelected(true);
       selectAllCheckboxRef.current.indeterminate = false;
-    } else if (selectedFiles.length > 0) {
-      setSelectAll(false);
+    } else if (pathsOfSelectedFiles.length > 0) {
+      setAllAvailableFilesSelected(false);
       selectAllCheckboxRef.current.indeterminate = true;
     } else {
-      setSelectAll(false);
+      setAllAvailableFilesSelected(false);
       selectAllCheckboxRef.current.indeterminate = false;
     }
-  }, [selectedFiles]);
+  }, [pathsOfSelectedFiles]);
 
   const handleSelectAll = () => {
-    if (selectAll) {
-      setSelectedFiles([]);
+    if (allAvailableFilesSelected) {
+      setPathsOfSelectedFiles([]);
     } else {
-      setSelectedFiles(
-        files
-          .map((_, index) =>
-            files[index].status === 'available' ? index : null
-          )
-          .filter((index) => index !== null)
+      setPathsOfSelectedFiles(
+        files.reduce((acc, file) => {
+          if (isFileAvailable(file.status)) {
+            acc.push(file.path);
+          }
+          return acc;
+        }, [])
       );
     }
   };
 
-  const handleCheckboxChange = (index) => {
-    if (selectedFiles.includes(index)) {
-      setSelectedFiles(selectedFiles.filter((id) => id !== index));
+  const handleCheckboxChange = (path) => {
+    if (pathsOfSelectedFiles.includes(path)) {
+      setPathsOfSelectedFiles(
+        pathsOfSelectedFiles.filter((currentPath) => currentPath !== path)
+      );
     } else {
-      setSelectedFiles([...selectedFiles, index]);
+      setPathsOfSelectedFiles([...pathsOfSelectedFiles, path]);
     }
   };
 
   const handleDownload = () => {
-    const selectedFilePaths = selectedFiles.map(
-      (index) => `Path: ${files[index].path}, Device: ${files[index].device}`
-    );
+    const filesByPaths = new Map(files.map((file) => [file.path, file]));
+
+    const selectedFilePaths = pathsOfSelectedFiles.map((currentPath) => {
+      const { path, device } = filesByPaths.get(currentPath);
+      return `Path: ${path}, Device: ${device}`;
+    });
     alert(selectedFilePaths.join('\n'));
   };
 
@@ -90,11 +98,14 @@ const FileTable = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <span>
-          {selectedFiles.length
-            ? `Selected ${selectedFiles.length}`
+          {pathsOfSelectedFiles.length
+            ? `Selected ${pathsOfSelectedFiles.length}`
             : 'None Selected'}
         </span>
-        <button onClick={handleDownload} disabled={!selectedFiles.length}>
+        <button
+          onClick={handleDownload}
+          disabled={!pathsOfSelectedFiles.length}
+        >
           Download Selected
         </button>
       </div>
@@ -105,7 +116,7 @@ const FileTable = () => {
               <input
                 type="checkbox"
                 ref={selectAllCheckboxRef}
-                checked={selectAll}
+                checked={allAvailableFilesSelected}
                 title="select all"
                 onChange={handleSelectAll}
               />
@@ -116,17 +127,19 @@ const FileTable = () => {
           </tr>
         </thead>
         <tbody>
-          {files.map((file, index) => (
+          {files.map((file) => (
             <tr
-              key={`${file.name}-${index}`}
-              className={selectedFiles.includes(index) ? styles.selected : ''}
+              key={`${file.path}`}
+              className={
+                pathsOfSelectedFiles.includes(file.path) ? styles.selected : ''
+              }
             >
               <td>
                 <input
                   type="checkbox"
-                  checked={selectedFiles.includes(index)}
+                  checked={pathsOfSelectedFiles.includes(file.path)}
                   title={`select-${file.name}`}
-                  onChange={() => handleCheckboxChange(index)}
+                  onChange={() => handleCheckboxChange(file.path)}
                   disabled={file.status !== 'available'}
                 />
               </td>
