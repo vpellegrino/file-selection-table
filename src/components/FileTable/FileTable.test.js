@@ -1,6 +1,10 @@
 import React from 'react';
-import { render, fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import FileTable from './FileTable';
+
+const SELECT_ALL_CHECKBOX_LABEL = /select all/i;
+const SELECT_FILE_CHECKBOX_LABEL = /select the file/i;
+const DOWNLOAD_BUTTON_TEXT = 'Download Selected';
 
 const mockFiles = [
   {
@@ -35,54 +39,60 @@ const mockFiles = [
   },
 ];
 
+const selectAllFiles = () => {
+  const selectAllCheckbox = screen.getByRole('checkbox', {
+    name: SELECT_ALL_CHECKBOX_LABEL,
+  });
+  fireEvent.click(selectAllCheckbox);
+};
+
+const getAllAvailableCheckboxes = () =>
+  screen
+    .getAllByRole('checkbox', { name: SELECT_FILE_CHECKBOX_LABEL })
+    .filter((checkbox) => !checkbox.disabled);
+
+const getNonAvailableCheckboxes = () =>
+  screen
+    .getAllByRole('checkbox', { name: SELECT_FILE_CHECKBOX_LABEL })
+    .filter((checkbox) => checkbox.disabled);
+
+const clickCheckboxes = (checkboxes) =>
+  checkboxes.forEach((checkbox) => fireEvent.click(checkbox));
+
+const getDownloadButton = () => screen.getByText(DOWNLOAD_BUTTON_TEXT);
+
 describe('<FileTable />', () => {
   it('displays "None Selected" when no items are selected', () => {
     render(<FileTable files={mockFiles} />);
+
     expect(screen.getByText(/None Selected/i)).toBeInTheDocument();
   });
 
   it('selects all available items when "Select All" is clicked', () => {
     render(<FileTable files={mockFiles} />);
 
-    const selectAllCheckbox = screen.getByRole('checkbox', {
-      name: /select all/i,
-    });
+    selectAllFiles();
 
-    // Clicking the "Select All" checkbox
-    fireEvent.click(selectAllCheckbox);
-
-    // Only 2 checkboxes should be checked, corresponding to available files
-    const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select the file/i,
-    });
+    const availableCheckboxes = getAllAvailableCheckboxes();
     expect(availableCheckboxes.filter((cb) => cb.checked).length).toBe(2);
   });
 
   it('disables the checkboxes for non-available files', () => {
     render(<FileTable files={mockFiles} />);
 
-    const nonAvailableCheckboxes = screen
-      .getAllByRole('checkbox', { name: /select the file/i })
-      .filter((checkbox) => checkbox.disabled);
-
-    // Ensure that 3 non-available files have disabled checkboxes
+    const nonAvailableCheckboxes = getNonAvailableCheckboxes();
     expect(nonAvailableCheckboxes.length).toBe(3);
   });
 
   it('sets "Select All" to indeterminate when some but not all items are selected', () => {
     render(<FileTable files={mockFiles} />);
 
+    const availableCheckboxes = getAllAvailableCheckboxes();
+    fireEvent.click(availableCheckboxes[0]);
+
     const selectAllCheckbox = screen.getByRole('checkbox', {
-      name: /select all/i,
+      name: SELECT_ALL_CHECKBOX_LABEL,
     });
-
-    // Select one available file manually
-    const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select the file/i,
-    });
-    fireEvent.click(availableCheckboxes[0]); // Select first available file
-
-    // Check that the Select All checkbox is indeterminate
     expect(selectAllCheckbox.indeterminate).toBe(true);
   });
 
@@ -90,85 +100,59 @@ describe('<FileTable />', () => {
     render(<FileTable files={mockFiles} />);
 
     const selectAllCheckbox = screen.getByRole('checkbox', {
-      name: /select all/i,
+      name: SELECT_ALL_CHECKBOX_LABEL,
     });
-    const availableCheckboxes = screen
-      .getAllByRole('checkbox', { name: /select the file/i })
-      .filter((checkbox) => !checkbox.disabled);
+    const availableCheckboxes = getAllAvailableCheckboxes();
 
-    // Select all available files manually
-    availableCheckboxes.forEach((checkbox) => fireEvent.click(checkbox));
-
-    // Wait for the "Select All" checkbox to be fully checked
+    clickCheckboxes(availableCheckboxes);
     await waitFor(() => {
       expect(selectAllCheckbox.checked).toBe(true);
     });
     expect(selectAllCheckbox.indeterminate).toBe(false);
 
-    // Deselect all files manually
-    availableCheckboxes.forEach((checkbox) => fireEvent.click(checkbox));
-
-    // Wait for the "Select All" checkbox to be unchecked
+    clickCheckboxes(availableCheckboxes);
     await waitFor(() => {
       expect(selectAllCheckbox.checked).toBe(false);
     });
     expect(selectAllCheckbox.indeterminate).toBe(false);
   });
 
-  it('disables Download button when no files are selected', () => {
+  it('disables the Download button when no files are selected', () => {
     render(<FileTable files={mockFiles} />);
-    const downloadButton = screen.getByText(/Download Selected/i);
-    expect(downloadButton).toBeDisabled();
+
+    expect(getDownloadButton()).toBeDisabled();
   });
 
-  it('enables Download button when at least one file is selected', () => {
+  it('enables the Download button when at least one file is selected', () => {
     render(<FileTable files={mockFiles} />);
 
-    const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select the file/i,
-    });
-
-    // Select an available file
+    const availableCheckboxes = getAllAvailableCheckboxes();
     fireEvent.click(availableCheckboxes[0]);
 
-    // Assert that the download button is enabled
-    const downloadButton = screen.getByText(/Download Selected/i);
-    expect(downloadButton).not.toBeDisabled();
+    expect(getDownloadButton()).not.toBeDisabled();
   });
 
   it('shows an alert with selected files when Download is clicked', () => {
-    global.alert = jest.fn();
     render(<FileTable files={mockFiles} />);
 
-    // Select the available files
-    const checkboxes = screen.getAllByRole('checkbox', {
-      name: /select the file/i,
-    });
-    fireEvent.click(checkboxes[0]); // netsh.exe
-    fireEvent.click(checkboxes[1]); // uxtheme.dll
+    global.alert = jest.fn();
+    const availableCheckboxes = getAllAvailableCheckboxes();
 
-    // Click the download button
-    const downloadButton = screen.getByText(/Download Selected/i);
-    fireEvent.click(downloadButton);
+    fireEvent.click(availableCheckboxes[0]); // Select netsh.exe
+    fireEvent.click(availableCheckboxes[1]); // Select uxtheme.dll
 
-    // Check that the alert is called with selected paths
+    fireEvent.click(getDownloadButton());
+
     expect(global.alert).toHaveBeenCalledWith(expect.stringContaining('Path:'));
   });
 
   it('reflects the correct count of selected items in the header', () => {
     render(<FileTable files={mockFiles} />);
 
-    const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select the file/i,
-    });
-
-    // Initially should display "None Selected"
+    const availableCheckboxes = getAllAvailableCheckboxes();
     expect(screen.getByText(/None Selected/i)).toBeInTheDocument();
 
-    // Select an available file
     fireEvent.click(availableCheckboxes[0]);
-
-    // Should now display "Selected 1"
     expect(screen.getByText(/Selected 1/i)).toBeInTheDocument();
   });
 
@@ -176,18 +160,11 @@ describe('<FileTable />', () => {
     render(<FileTable files={mockFiles} />);
 
     const selectAllCheckbox = screen.getByRole('checkbox', {
-      name: /select all/i,
+      name: SELECT_ALL_CHECKBOX_LABEL,
     });
+    const availableCheckboxes = getAllAvailableCheckboxes();
 
-    // Get all available checkboxes (the ones that are not disabled)
-    const availableCheckboxes = screen
-      .getAllByRole('checkbox', { name: /select the file/i })
-      .filter((checkbox) => !checkbox.disabled);
-
-    // Manually select all available checkboxes
-    availableCheckboxes.forEach((checkbox) => fireEvent.click(checkbox));
-
-    // Check that the Select All checkbox is fully checked
+    clickCheckboxes(availableCheckboxes);
     await waitFor(() => {
       expect(selectAllCheckbox.checked).toBe(true);
     });
@@ -197,22 +174,37 @@ describe('<FileTable />', () => {
     render(<FileTable files={mockFiles} />);
 
     const selectAllCheckbox = screen.getByRole('checkbox', {
-      name: /select all/i,
+      name: SELECT_ALL_CHECKBOX_LABEL,
     });
-    const availableCheckboxes = screen.getAllByRole('checkbox', {
-      name: /select the file/i,
-    });
+    const availableCheckboxes = getAllAvailableCheckboxes();
 
-    // Select all available checkboxes
-    availableCheckboxes.forEach((checkbox) => fireEvent.click(checkbox));
-
-    // Deselect the first available file
+    clickCheckboxes(availableCheckboxes);
     fireEvent.click(availableCheckboxes[0]);
 
-    // Check that the Select All checkbox is unchecked
     await waitFor(() => {
       expect(selectAllCheckbox.checked).toBe(false);
     });
-    expect(selectAllCheckbox.indeterminate).toBe(true); // Indeterminate when some but not all are selected
+    expect(selectAllCheckbox.indeterminate).toBe(true);
+  });
+
+  it('unchecks the select-all checkbox if all available files are deselected after being selected', async () => {
+    render(<FileTable files={mockFiles} />);
+
+    const selectAllCheckbox = screen.getByRole('checkbox', {
+      name: SELECT_ALL_CHECKBOX_LABEL,
+    });
+    const availableCheckboxes = getAllAvailableCheckboxes();
+
+    clickCheckboxes(availableCheckboxes);
+    await waitFor(() => {
+      expect(selectAllCheckbox.checked).toBe(true);
+    });
+
+    clickCheckboxes(availableCheckboxes);
+
+    await waitFor(() => {
+      expect(selectAllCheckbox.checked).toBe(false);
+    });
+    expect(selectAllCheckbox.indeterminate).toBe(false);
   });
 });
