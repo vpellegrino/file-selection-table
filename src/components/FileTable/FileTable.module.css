@@ -1,0 +1,40 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: left;
+}
+
+tr:hover {
+  background-color: #f1f1f1;
+}
+
+.selected {
+  background-color: #d1e7dd;
+}
+
+button {
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+input[type=checkbox]:disabled, button:disabled {
+  cursor: not-allowed;
+  background-color: #ccc;
+}
