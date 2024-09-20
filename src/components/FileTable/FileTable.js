@@ -4,7 +4,7 @@ import {
   formatPathAndDeviceInfo,
   getPathsForAllAvailableFiles,
   isFileAvailable,
-} from './helper';
+} from './helpers';
 
 const FileTable = ({ files }) => {
   const [pathsOfSelectedFiles, setPathsOfSelectedFiles] = useState([]);
