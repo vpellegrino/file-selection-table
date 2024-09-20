@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './FileTable.module.css';
-import { isFileAvailable } from './helper';
+import {
+  formatPathAndDeviceInfo,
+  getPathsForAllAvailableFiles,
+  isFileAvailable,
+} from './helper';
 
 const FileTable = ({ files }) => {
   const [pathsOfSelectedFiles, setPathsOfSelectedFiles] = useState([]);
@@ -30,14 +34,7 @@ const FileTable = ({ files }) => {
     if (allAvailableFilesSelected) {
       setPathsOfSelectedFiles([]);
     } else {
-      setPathsOfSelectedFiles(
-        files.reduce((acc, file) => {
-          if (isFileAvailable(file.status)) {
-            acc.push(file.path);
-          }
-          return acc;
-        }, [])
-      );
+      setPathsOfSelectedFiles(getPathsForAllAvailableFiles(files));
     }
   };
 
@@ -54,10 +51,9 @@ const FileTable = ({ files }) => {
   const handleDownload = () => {
     const filesByPaths = new Map(files.map((file) => [file.path, file]));
 
-    const selectedFilePaths = pathsOfSelectedFiles.map((currentPath) => {
-      const { path, device } = filesByPaths.get(currentPath);
-      return `Path: ${path}, Device: ${device}`;
-    });
+    const selectedFilePaths = pathsOfSelectedFiles.map((currentPath) =>
+      formatPathAndDeviceInfo(filesByPaths, currentPath)
+    );
     alert(selectedFilePaths.join('\n'));
   };
 
